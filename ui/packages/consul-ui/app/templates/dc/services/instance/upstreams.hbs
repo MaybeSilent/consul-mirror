@@ -1,0 +1,60 @@
+<div class="tab-section">
+{{#let
+
+  (hash
+    value=(or sortBy "DestinationName:asc")
+    change=(action (mut sortBy) value="target.selected")
+  )
+
+  (hash
+    searchproperty=(hash
+      value=(if (not-eq searchproperty undefined)
+        (split searchproperty ',')
+        searchProperties
+      )
+      change=(action (mut searchproperty) value="target.selectedItems")
+      default=searchProperties
+    )
+  )
+
+  proxy.Service.Proxy.Upstreams
+
+as |sort filters items|}}
+    {{#if (gt items.length 0)}}
+      <input type="checkbox" id="toolbar-toggle" />
+      <Consul::UpstreamInstance::SearchBar
+        @search={{search}}
+        @onsearch={{action (mut search) value="target.value"}}
+        @searchproperties={{searchProperties}}
+
+        @sort={{sort}}
+
+        @filter={{filters}}
+      />
+    {{/if}}
+    <DataCollection
+      @type="upstream-instance"
+      @sort={{sort.value}}
+      @filters={{filters}}
+      @search={{search}}
+      @items={{items}}
+    as |collection|>
+      <collection.Collection>
+        <Consul::UpstreamInstance::List
+          @items={{collection.items}}
+          @dc={{dc}}
+          @nspace={{nspace}}
+        />
+      </collection.Collection>
+      <collection.Empty>
+        <EmptyState>
+          <BlockSlot @name="body">
+            <p>
+              This service has no upstreams{{#if (gt items.length 0)}} matching that search{{/if}}.
+            </p>
+          </BlockSlot>
+        </EmptyState>
+      </collection.Empty>
+    </DataCollection>
+{{/let}}
+</div>

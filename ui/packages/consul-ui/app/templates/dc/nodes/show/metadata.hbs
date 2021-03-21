@@ -1,0 +1,13 @@
+<div class="tab-section">
+{{#if item.Meta}}
+  <Consul::Metadata::List @items={{entries item.Meta}} />
+{{else}}
+  <EmptyState>
+    <BlockSlot @name="body">
+      <p>
+        This node has no metadata.
+      </p>
+    </BlockSlot>
+  </EmptyState>
+{{/if}}
+</div>
