@@ -101,7 +101,7 @@ function main {
       esac
    done
 
-   ## 利用
+   ## 调用编译函数
    build_consul_local "${sdir}" "${build_os}" "${build_arch}" || return 1
    
    return 0
