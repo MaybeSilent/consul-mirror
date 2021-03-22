@@ -1,3 +1,4 @@
+## make file 构建文件
 SHELL = bash
 GOGOVERSION?=$(shell grep github.com/gogo/protobuf go.mod | awk '{print $$2}')
 GOTOOLS = \
@@ -147,7 +148,7 @@ all: bin
 noop: ;
 
 bin: tools
-	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh
+	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh ## 通过build-local.sh脚本进行构建
 
 # dev creates binaries for testing locally - these are put into ./bin and $GOPATH
 dev: changelogfmt dev-build
@@ -228,6 +229,7 @@ update-vendor: go-mod-tidy
 	@mv vendor/modules.txt.new vendor/modules.txt
 
 test-internal:
+	# 命令前面➕@可以不输出执行语句
 	@echo "--> Running go test"
 	@rm -f test.log exit-code
 	@# Dump verbose output to test.log so we can surface test names on failure but
