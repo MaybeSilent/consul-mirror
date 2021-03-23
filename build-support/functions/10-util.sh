@@ -1,8 +1,19 @@
+# tput颜色说明
+# 0：黑色
+# 1：蓝色
+# 2：绿色
+# 3：青色
+# 4：红色
+# 5：洋红色
+# 6：黄色
+# 7：白色
+
+
 function err {
    if test "${COLORIZE}" -eq 1
    then
       tput bold
-      tput setaf 1
+      tput setaf 1 # 红色
    fi
 
    echo "$@" 1>&2
@@ -17,7 +28,7 @@ function status {
    if test "${COLORIZE}" -eq 1
    then
       tput bold
-      tput setaf 4
+      tput setaf 4 # 蓝色
    fi
 
    echo "$@"
@@ -32,14 +43,14 @@ function status_stage {
    if test "${COLORIZE}" -eq 1
    then
       tput bold
-      tput setaf 2
+      tput setaf 2 # 绿色
    fi
 
    echo "$@"
 
    if test "${COLORIZE}" -eq 1
    then
-      tput sgr0
+      tput sgr0 # 恢复原状
    fi
 }
 
