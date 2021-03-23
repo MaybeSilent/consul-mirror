@@ -6,7 +6,7 @@ function supported_osarch {
    #   0 - supported
    #   * - not supported
    local osarch="$1"
-   for valid in $(go tool dist list)
+   for valid in $(go tool dist list) # 所有受支持的操作系统/体系结构组合的列表, go支持交叉编译
    do
       if test "${osarch}" = "${valid}"
       then
@@ -355,6 +355,7 @@ function build_consul {
    return $ret
 }
 
+## shell函数基本流程 1.校验参数 2.校验完成后执行相应逻辑
 function build_consul_local {
    # Arguments:
    #   $1 - Path to the top level Consul source
@@ -378,7 +379,7 @@ function build_consul_local {
       err "ERROR: '$1' is not a directory. build_consul must be called with the path to the top level source as the first argument'"
       return 1
    fi
-
+   # local表明变量作用域仅在函数内有效
    local sdir="$1"
    local build_os="$2"
    local build_arch="$3"
@@ -391,7 +392,7 @@ function build_consul_local {
    fi
 
    pushd ${sdir} > /dev/null
-   if is_set "${CONSUL_DEV}"
+   if is_set "${CONSUL_DEV}" # 判断是否设置了CONSUL_DEV变量，如果设置了CONSUL_DEV，CONSUL_DEV为true，yes或者1
    then
       if test -z "${XC_OS}"
       then
@@ -403,19 +404,19 @@ function build_consul_local {
          XC_ARCH=$(go env GOARCH)
       fi
    fi
-   XC_OS=${XC_OS:-"solaris darwin freebsd linux windows"}
+   XC_OS=${XC_OS:-"solaris darwin freebsd linux windows"} # 未设置则选择全部默认值
    XC_ARCH=${XC_ARCH:-"386 amd64 arm arm64"}
 
    if test -z "${build_os}"
    then
-      build_os="${XC_OS}"
+      build_os="${XC_OS}" # 花括号可选，帮助解释器识别边界变量
    fi
 
    if test -z "${build_arch}"
    then
       build_arch="${XC_ARCH}"
    fi
-
+   ## 通过go env获取build_os 与 build_arch 参数
    status_stage "==> Building Consul - OSes: ${build_os}, Architectures: ${build_arch}"
    mkdir pkg.bin.new 2> /dev/null
 
@@ -443,6 +444,7 @@ function build_consul_local {
          if [ $os == "windows" ];then
                binname="consul.exe"
          fi
+         # 真正运行 go insall 方法对consul项目进行编译
          debug_run env CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go install -ldflags "${GOLDFLAGS}" -tags "${GOTAGS}" && cp "${MAIN_GOPATH}/bin/${GOBIN_EXTRA}${binname}" "${outdir}/${binname}"
          if test $? -ne 0
          then
