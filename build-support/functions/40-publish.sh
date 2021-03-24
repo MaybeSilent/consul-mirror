@@ -354,6 +354,7 @@ function verify_release_build {
    confirm_consul_info "${consul_exe}" || return 1
 }
 
+# 发布脚本函数，包括推送git等操作
 function publish_release {
    # Arguments:
    #   $1 - Path to top level Consul source that contains the built release
