@@ -25,9 +25,9 @@ GIT_DIRTY?=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true
 GIT_IMPORT=github.com/hashicorp/consul/version
 GOLDFLAGS=-X $(GIT_IMPORT).GitCommit=$(GIT_COMMIT)$(GIT_DIRTY)
 
-PROTOFILES?=$(shell find . -name '*.proto' | grep -v 'vendor/')
-PROTOGOFILES=$(PROTOFILES:.proto=.pb.go)
-PROTOGOBINFILES=$(PROTOFILES:.proto=.pb.binary.go)
+PROTOFILES?=$(shell find . -name '*.proto' | grep -v 'vendor/') # 查找当前目录下的proto文件
+PROTOGOFILES=$(PROTOFILES:.proto=.pb.go) #.proto文件后缀替换
+PROTOGOBINFILES=$(PROTOFILES:.proto=.pb.binary.go) #.proto文件后缀替换
 
 ifeq ($(FORCE_REBUILD),1)
 NOCACHE=--no-cache
@@ -151,10 +151,10 @@ bin: tools
 	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh ## 通过build-local.sh脚本进行构建
 
 # dev creates binaries for testing locally - these are put into ./bin and $GOPATH
-dev: changelogfmt dev-build
+dev: changelogfmt dev-build #开发环境编译，仅仅编译本机的运行包
 
 dev-build:
-	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o $(GOOS) -a $(GOARCH)
+	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o $(GOOS) -a $(GOARCH) #指定当前的操作系统与体系结构
 
 dev-docker: linux
 	@echo "Pulling consul container image - $(CONSUL_IMAGE_VERSION)"
@@ -195,10 +195,10 @@ dist:
 	@$(SHELL) $(CURDIR)/build-support/scripts/release.sh -t '$(DIST_TAG)' -b '$(DIST_BUILD)' -S '$(DIST_SIGN)' $(DIST_VERSION_ARG) $(DIST_DATE_ARG) $(DIST_REL_ARG)
 
 verify:
-	@$(SHELL) $(CURDIR)/build-support/scripts/verify.sh
+	@$(SHELL) $(CURDIR)/build-support/scripts/verify.sh # 会进行签名验证等操作
 
 publish:
-	@$(SHELL) $(CURDIR)/build-support/scripts/publish.sh $(PUB_GIT_ARG) $(PUB_WEBSITE_ARG)
+	@$(SHELL) $(CURDIR)/build-support/scripts/publish.sh $(PUB_GIT_ARG) $(PUB_WEBSITE_ARG) # 通过shell脚本可以进行git发布等操作
 
 dev-tree:
 	@$(SHELL) $(CURDIR)/build-support/scripts/dev.sh $(DEV_PUSH_ARG)
@@ -214,19 +214,19 @@ cov: other-consul dev-build
 
 test: other-consul dev-build lint test-internal
 
-go-mod-tidy:
+go-mod-tidy: #对consul的三个模块进行引用更新
 	@echo "--> Running go mod tidy"
-	@cd sdk && go mod tidy
-	@cd api && go mod tidy
-	@go mod tidy
+	@cd sdk && go mod tidy # sdk模块
+	@cd api && go mod tidy # api模块
+	@go mod tidy # 整体代码
 
 update-vendor: go-mod-tidy
 	@echo "--> Running go mod vendor"
-	@go mod vendor
+	@go mod vendor # 更新vendor目录
 	@echo "--> Removing vendoring of our own nested modules"
-	@rm -rf vendor/github.com/hashicorp/consul
-	@grep -v "hashicorp/consul/" < vendor/modules.txt > vendor/modules.txt.new
-	@mv vendor/modules.txt.new vendor/modules.txt
+	@rm -rf vendor/github.com/hashicorp/consul  # 通过linux命令进行删除
+	@grep -v "hashicorp/consul/" < vendor/modules.txt > vendor/modules.txt.new # 更新modules.txt
+	@mv vendor/modules.txt.new vendor/modules.txt # 将modules.txt进行覆盖
 
 test-internal:
 	# 命令前面➕@可以不输出执行语句
@@ -291,7 +291,7 @@ test-docker: linux go-build-image
 		$(GO_BUILD_TAG) \
 		make test-internal
 
-other-consul:
+other-consul: # 确认是否有其他consul进程运行
 	@echo "--> Checking for other consul instances"
 	@if ps -ef | grep 'consul agent' | grep -v grep ; then \
 		echo "Found other running consul agents. This may affect your tests." ; \
@@ -315,14 +315,14 @@ static-assets:
 # Build the static web ui and build static assets inside a Docker container
 ui: ui-docker static-assets-docker
 
-tools:
+tools: #拉取编译所需工具
 	@mkdir -p .gotools
 	@cd .gotools && if [[ ! -f go.mod ]]; then \
 		go mod init consul-tools ; \
 	fi
 	cd .gotools && go get -v $(GOTOOLS)
 
-version:
+version: # 输出当前版本号
 	@echo -n "Version:                    "
 	@$(SHELL) $(CURDIR)/build-support/scripts/version.sh
 	@echo -n "Version + release:          "
@@ -372,9 +372,10 @@ else
 endif
 
 proto: $(PROTOGOFILES) $(PROTOGOBINFILES)
+	# @echo $(PROTOGOFILES)
 	@echo "Generated all protobuf Go files"
 
-
+# proto文件生成命令，通过通配符进行匹配
 %.pb.go %.pb.binary.go: %.proto
 	@$(SHELL) $(CURDIR)/build-support/scripts/proto-gen.sh --grpc --import-replace "$<"
 
@@ -384,7 +385,7 @@ proto: $(PROTOGOFILES) $(PROTOGOBINFILES)
 module-versions:
 	@go list -m -u -f '{{if .Update}} {{printf "%-50v %-40s" .Path .Version}} {{with .Time}} {{ .Format "2006-01-02" -}} {{else}} {{printf "%9s" ""}} {{end}}   {{ .Update.Version}} {{end}}' all
 
-
+# 避免命令与当前文件夹发生冲突
 .PHONY: all ci bin dev dist cov test test-flake test-internal cover lint ui static-assets tools
 .PHONY: docker-images go-build-image ui-build-image static-assets-docker consul-docker ui-docker
 .PHONY: version proto test-envoy-integ
