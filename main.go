@@ -24,6 +24,7 @@ func main() {
 func realMain() int {
 	log.SetOutput(ioutil.Discard) // main函数将log包的输出重定向到/dev/null中
 
+	// "github.com/mitchellh/cli" github cli处理
 	ui := &cli.BasicUi{Writer: os.Stdout, ErrorWriter: os.Stderr}
 	cmds := command.Map(ui)
 	var names []string

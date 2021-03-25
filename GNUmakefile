@@ -23,7 +23,7 @@ GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 GIT_COMMIT_YEAR?=$(shell git show -s --format=%cd --date=format:%Y HEAD)
 GIT_DIRTY?=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 GIT_IMPORT=github.com/hashicorp/consul/version
-GOLDFLAGS=-X $(GIT_IMPORT).GitCommit=$(GIT_COMMIT)$(GIT_DIRTY)
+GOLDFLAGS=-X $(GIT_IMPORT).GitCommit=$(GIT_COMMIT)$(GIT_DIRTY) # 在此会注入GitCommit
 
 PROTOFILES?=$(shell find . -name '*.proto' | grep -v 'vendor/') # 查找当前目录下的proto文件
 PROTOGOFILES=$(PROTOFILES:.proto=.pb.go) #.proto文件后缀替换
