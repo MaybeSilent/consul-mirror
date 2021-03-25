@@ -18,11 +18,11 @@ func init() {
 }
 
 func main() {
-	os.Exit(realMain())
+	os.Exit(realMain()) // 控制系统结束返回值
 }
 
 func realMain() int {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(ioutil.Discard) // main函数将log包的输出重定向到/dev/null中
 
 	ui := &cli.BasicUi{Writer: os.Stdout, ErrorWriter: os.Stderr}
 	cmds := command.Map(ui)
