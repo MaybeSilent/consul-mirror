@@ -93,6 +93,7 @@ type CheckAlert struct {
 }
 
 // Check checks for alerts and new version information.
+// Check方法提供更新检查，访问给定的url，得到相应的返回结果
 func Check(p *CheckParams) (*CheckResponse, error) {
 	if disabled := os.Getenv("CHECKPOINT_DISABLE"); disabled != "" && !p.Force {
 		return &CheckResponse{}, nil
@@ -105,6 +106,7 @@ func Check(p *CheckParams) (*CheckResponse, error) {
 	}
 
 	// If we have a cached result, then use that
+	// 从缓存中获取结果值
 	if r, err := checkCache(p.Version, p.CacheFile, p.CacheDuration); err != nil {
 		return nil, err
 	} else if r != nil {
@@ -141,7 +143,7 @@ func Check(p *CheckParams) (*CheckResponse, error) {
 	u.Host = "checkpoint-api.hashicorp.com"
 	u.Path = fmt.Sprintf("/v1/check/%s", p.Product)
 	u.RawQuery = v.Encode()
-
+	// 请求特定地址，获取结果信息
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -164,7 +166,7 @@ func Check(p *CheckParams) (*CheckResponse, error) {
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Unknown status: %d", resp.StatusCode)
 	}
-
+	// 缓存结果值
 	var r io.Reader = resp.Body
 	if p.CacheFile != "" {
 		// Make sure the directory holding our cache exists.
@@ -285,6 +287,8 @@ func checkCache(current string, path string, d time.Duration) (io.ReadCloser, er
 
 	return f, nil
 }
+
+// 获取返回的结果值信息
 func checkResult(r io.Reader) (*CheckResponse, error) {
 	var result CheckResponse
 	if err := json.NewDecoder(r).Decode(&result); err != nil {
