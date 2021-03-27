@@ -41,6 +41,9 @@ func realMain() int {
 		HelpWriter:   os.Stdout,
 		ErrorWriter:  os.Stderr,
 	}
+	// cli对输入的命令进行解析
+	// cli功能包括：1，正常命令提示 2，命令的使用，help规则 3，命令的错误提示等
+	// 各大功能封装在command的run方法中
 
 	if cli.IsVersion() {
 		cmd := version.New(ui)
