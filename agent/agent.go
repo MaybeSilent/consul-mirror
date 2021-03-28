@@ -87,6 +87,7 @@ const (
 )
 
 var (
+	// http地址正则表达式匹配：(\[.*?\]|\[?[\w\-\.]+)，匹配[]中括号包含的内容，中括号开头的内容
 	httpAddrRE = regexp.MustCompile(`^(http[s]?://)(\[.*?\]|\[?[\w\-\.]+)(:\d+)?([^?]*)(\?.*)?$`)
 	grpcAddrRE = regexp.MustCompile("(.*)((?::)(?:[0-9]+))(.*)$")
 )
@@ -94,7 +95,7 @@ var (
 type configSource int
 
 const (
-	ConfigSourceLocal configSource = iota
+	ConfigSourceLocal configSource = iota // configSource，启动配置文件枚举值
 	ConfigSourceRemote
 )
 
@@ -107,7 +108,7 @@ var configSourceFromName = map[string]configSource{
 	"remote": ConfigSourceRemote,
 	// If the value is not found in the persisted config file, then use the
 	// former default.
-	"": ConfigSourceLocal,
+	"": ConfigSourceLocal, //
 }
 
 func (s configSource) String() string {
@@ -122,6 +123,7 @@ func ConfigSourceFromName(name string) (configSource, bool) {
 
 // delegate defines the interface shared by both
 // consul.Client and consul.Server.
+// 两者共用的接口，实现类有Client与Server，常见的方法如加入或离开本地局域网等
 type delegate interface {
 	GetLANCoordinate() (lib.CoordinateSet, error)
 	Leave() error
@@ -151,6 +153,7 @@ type delegate interface {
 }
 
 // notifier is called after a successful JoinLAN.
+// 加入局域网后触发notify
 type notifier interface {
 	Notify(string) error
 }
@@ -161,6 +164,8 @@ type notifier interface {
 // However, it can run in either a client, or server mode. In server
 // mode, it runs a full Consul server. In client-only mode, it only forwards
 // requests to other Consul servers.
+// client : 转发相关的请求到server
+// server : 具备全部功能，1，对其他agent暴露RPC接口 2，运行HTTP查询，DNS查询与RPC查询接口
 type Agent struct {
 	// TODO: remove fields that are already in BaseDeps
 	baseDeps BaseDeps
@@ -191,7 +196,7 @@ type Agent struct {
 	syncMu sync.Mutex
 	syncCh chan struct{}
 
-	// cache is the in-memory cache for data the Agent requests.
+	// cache is the in-memory cache for data the Agent requests. // agent的缓存配置
 	cache *cache.Cache
 
 	// checkReapAfter maps the check ID to a timeout after which we should
@@ -379,11 +384,11 @@ func New(bd BaseDeps) (*Agent, error) {
 		CacheName: cacheName,
 	}
 
-	a.serviceManager = NewServiceManager(&a)
+	a.serviceManager = NewServiceManager(&a)  // 服务治理相关的结构体
 
 	// TODO: do this somewhere else, maybe move to newBaseDeps
 	var err error
-	a.aclMasterAuthorizer, err = initializeACLs(bd.RuntimeConfig.NodeName)
+	a.aclMasterAuthorizer, err = initializeACLs(bd.RuntimeConfig.NodeName) // acl的相关配置
 	if err != nil {
 		return nil, err
 	}
@@ -392,13 +397,13 @@ func New(bd BaseDeps) (*Agent, error) {
 	// there any longer. Originally it did because we passed the agent
 	// delegate to some of the cache registrations. Now we just
 	// pass the agent itself so its safe to move here.
-	a.registerCache()
+	a.registerCache() // 对于agent可以缓存的内容进行存储
 
 	// TODO: why do we ignore failure to load persisted tokens?
 	_ = a.tokens.Load(bd.RuntimeConfig.ACLTokens, a.logger)
 
 	// TODO: pass in a fully populated apiServers into Agent.New
-	a.apiServers = NewAPIServers(a.logger)
+	a.apiServers = NewAPIServers(a.logger) // api service服务
 
 	return &a, nil
 }
@@ -432,8 +437,8 @@ func LocalConfig(cfg *config.RuntimeConfig) local.Config {
 
 // Start verifies its configuration and runs an agent's various subprocesses.
 func (a *Agent) Start(ctx context.Context) error {
-	a.stateLock.Lock()
-	defer a.stateLock.Unlock()
+	a.stateLock.Lock() // 先进行加锁操作
+	defer a.stateLock.Unlock() // 方法完成后释放锁
 
 	// This needs to be done early on as it will potentially alter the configuration
 	// and then how other bits are brought up

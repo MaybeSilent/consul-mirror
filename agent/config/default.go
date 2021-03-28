@@ -14,7 +14,7 @@ import (
 // This needs to be merged first in the head.
 // TODO: return a LiteralSource (no decoding) instead of a FileSource
 func DefaultSource() Source {
-	cfg := consul.DefaultConfig()
+	cfg := consul.DefaultConfig() // 加载Consul的default配置信息
 	serfLAN := cfg.SerfLANConfig.MemberlistConfig
 	serfWAN := cfg.SerfWANConfig.MemberlistConfig
 
@@ -263,7 +263,7 @@ func DevConsulSource() Source {
 	c.Consul.Raft.HeartbeatTimeout = strPtr("35ms")
 	c.Consul.Raft.LeaderLeaseTimeout = strPtr("20ms")
 	c.Consul.Server.HealthInterval = strPtr("10ms")
-	return LiteralSource{Name: "consul-dev", Config: c}
+	return LiteralSource{Name: "consul-dev", Config: c}  // 开发模式Consul配置
 }
 
 func strPtr(v string) *string {

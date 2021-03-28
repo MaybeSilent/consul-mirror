@@ -151,24 +151,25 @@ func (c *cmd) startupJoinWan(agent *agent.Agent, cfg *config.RuntimeConfig) erro
 }
 // consul agent 启动方法
 func (c *cmd) run(args []string) int {
-	// 对
+	// 对输入的flag参数进行解析
 	if err := c.flags.Parse(args); err != nil {
 		if !strings.Contains(err.Error(), "help requested") {
 			c.UI.Error(fmt.Sprintf("error parsing flags: %v", err))
 		}
 		return 1
 	}
-	// 对agent的子命令进行解析
+	// 对agent的子命令进行解析，出现了多余的参数，则直接输出错误参数
 	if len(c.flags.Args()) > 0 {
 		c.UI.Error(fmt.Sprintf("Unexpected extra arguments: %v", c.flags.Args()))
 		return 1
 	}
-
-	logGate := &logging.GatedWriter{Writer: &cli.UiWriter{Ui: c.UI}}
-	loader := func(source config.Source) (config.LoadResult, error) {
+	// 初始化agent的配置
+	logGate := &logging.GatedWriter{Writer: &cli.UiWriter{Ui: c.UI}}  // 指定信息输出
+	loader := func(source config.Source) (config.LoadResult, error) { // 初始化loader加载配置的方法
 		c.configLoadOpts.DefaultConfig = source
 		return config.Load(c.configLoadOpts)
 	}
+	// agent配置的初始化
 	bd, err := agent.NewBaseDeps(loader, logGate)
 	if err != nil {
 		c.UI.Error(err.Error())

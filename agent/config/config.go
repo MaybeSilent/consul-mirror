@@ -15,7 +15,7 @@ type Source interface {
 	// Source returns an identifier for the Source that can be used in error message
 	Source() string
 	// Parse a configuration and return the result.
-	Parse() (Config, mapstructure.Metadata, error)
+	Parse() (Config, mapstructure.Metadata, error) // 解析相关的配置为Metadata
 }
 
 // ErrNoData indicates to Builder.Build that the source contained no data, and
