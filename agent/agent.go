@@ -442,7 +442,7 @@ func (a *Agent) Start(ctx context.Context) error {
 
 	// This needs to be done early on as it will potentially alter the configuration
 	// and then how other bits are brought up
-	c, err := a.baseDeps.AutoConfig.InitialConfiguration(ctx)
+	c, err := a.baseDeps.AutoConfig.InitialConfiguration(ctx) //
 	if err != nil {
 		return err
 	}
@@ -465,14 +465,14 @@ func (a *Agent) Start(ctx context.Context) error {
 	// regular and on-demand state synchronizations (anti-entropy).
 	a.sync = ae.NewStateSyncer(a.State, c.AEInterval, a.shutdownCh, a.logger)
 
-	// create the config for the rpc server/client
+	// create the config for the rpc server/client // 根据runtime的Config获取consul的Config
 	consulCfg, err := newConsulConfig(a.config, a.logger)
 	if err != nil {
 		return err
 	}
 
 	// Setup the user event callback
-	consulCfg.UserEventHandler = func(e serf.UserEvent) {
+	consulCfg.UserEventHandler = func(e serf.UserEvent) { // 初始化UserEventHandler
 		select {
 		case a.eventCh <- e:
 		case <-a.shutdownCh:
@@ -482,7 +482,7 @@ func (a *Agent) Start(ctx context.Context) error {
 	// ServerUp is used to inform that a new consul server is now
 	// up. This can be used to speed up the sync process if we are blocking
 	// waiting to discover a consul server
-	consulCfg.ServerUp = a.sync.SyncFull.Trigger
+	consulCfg.ServerUp = a.sync.SyncFull.Trigger // 将服务启动的方法赋值为集群内信息同步方法
 
 	err = a.initEnterprise(consulCfg)
 	if err != nil {
@@ -491,13 +491,13 @@ func (a *Agent) Start(ctx context.Context) error {
 
 	// Setup either the client or the server.
 	if c.ServerMode {
-		server, err := consul.NewServer(consulCfg, a.baseDeps.Deps)
+		server, err := consul.NewServer(consulCfg, a.baseDeps.Deps) // 获取server节点
 		if err != nil {
 			return fmt.Errorf("Failed to start Consul server: %v", err)
 		}
 		a.delegate = server
 	} else {
-		client, err := consul.NewClient(consulCfg, a.baseDeps.Deps)
+		client, err := consul.NewClient(consulCfg, a.baseDeps.Deps) // 获取client节点
 		if err != nil {
 			return fmt.Errorf("Failed to start Consul client: %v", err)
 		}
@@ -505,7 +505,7 @@ func (a *Agent) Start(ctx context.Context) error {
 	}
 
 	// the staggering of the state syncing depends on the cluster size.
-	a.sync.ClusterSize = func() int { return len(a.delegate.LANMembers()) }
+	a.sync.ClusterSize = func() int { return len(a.delegate.LANMembers()) } // 获取加入的局域网集群数量
 
 	// link the state with the consul server/client and the state syncer
 	// via callbacks. After several attempts this was easier than using
