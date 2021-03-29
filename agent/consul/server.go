@@ -314,19 +314,19 @@ type connHandler interface {
 // and extra options, potentially returning an error.
 func NewServer(config *Config, flat Deps) (*Server, error) {
 	logger := flat.Logger
-	if err := config.CheckProtocolVersion(); err != nil {
+	if err := config.CheckProtocolVersion(); err != nil { // 检查协议版本号，version
 		return nil, err
 	}
-	if config.DataDir == "" && !config.DevMode {
+	if config.DataDir == "" && !config.DevMode { // dev模式下可以不提供data目录
 		return nil, fmt.Errorf("Config must provide a DataDir")
 	}
-	if err := config.CheckACL(); err != nil {
+	if err := config.CheckACL(); err != nil { // 检查系统访问策略是否合法
 		return nil, err
 	}
 
 	// Check if TLS is enabled
 	if config.CAFile != "" || config.CAPath != "" {
-		config.UseTLS = true
+		config.UseTLS = true // 检查是否开启了https
 	}
 
 	// Set the primary DC if it wasn't set.
@@ -343,6 +343,7 @@ func NewServer(config *Config, flat Deps) (*Server, error) {
 	}
 
 	// Create the tombstone GC.
+	// 相关的GC设置
 	gc, err := state.NewTombstoneGC(config.TombstoneTTL, config.TombstoneTTLGranularity)
 	if err != nil {
 		return nil, err
@@ -372,10 +373,10 @@ func NewServer(config *Config, flat Deps) (*Server, error) {
 		reassertLeaderCh:        make(chan chan error),
 		segmentLAN:              make(map[string]*serf.Serf, len(config.Segments)),
 		sessionTimers:           NewSessionTimers(),
-		tombstoneGC:             gc,
-		serverLookup:            NewServerLookup(),
+		tombstoneGC:             gc, // gc相关的配置实例
+		serverLookup:            NewServerLookup(), // 服务发现
 		shutdownCh:              shutdownCh,
-		leaderRoutineManager:    NewLeaderRoutineManager(logger),
+		leaderRoutineManager:    NewLeaderRoutineManager(logger), // 领导节点路由
 		aclAuthMethodValidators: authmethod.NewCache(),
 		fsm:                     newFSMFromConfig(flat.Logger, gc, config),
 	}
@@ -395,10 +396,10 @@ func NewServer(config *Config, flat Deps) (*Server, error) {
 		s.Shutdown()
 		return nil, err
 	}
-
+	// 客户端的rpc限流器，RPCRateLimit限制每秒的请求速率，RPCMaxBurst限制最大的量
 	s.rpcLimiter.Store(rate.NewLimiter(config.RPCRateLimit, config.RPCMaxBurst))
 
-	configReplicatorConfig := ReplicatorConfig{
+	configReplicatorConfig := ReplicatorConfig{ // server模式需要同步相关数据
 		Name:     logging.ConfigEntry,
 		Delegate: &FunctionReplicator{ReplicateFn: s.replicateConfig},
 		Rate:     s.config.ConfigReplicationRate,

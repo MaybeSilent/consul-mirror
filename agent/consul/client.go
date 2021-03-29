@@ -55,41 +55,41 @@ type Client struct {
 	config *Config
 
 	// acls is used to resolve tokens to effective policies
-	acls *ACLResolver
+	acls *ACLResolver // client的访问控制配置
 
 	// DEPRECATED (ACL-Legacy-Compat) - Only needed while we support both
 	// useNewACLs is a flag to indicate whether we are using the new ACL system
 	useNewACLs int32
 
 	// Connection pool to consul servers
-	connPool *pool.ConnPool
+	connPool *pool.ConnPool // 连接池
 
 	// router is responsible for the selection and maintenance of
 	// Consul servers this agent uses for RPC requests
-	router *router.Router
+	router *router.Router // 请求路由
 
 	// rpcLimiter is used to rate limit the total number of RPCs initiated
 	// from an agent.
-	rpcLimiter atomic.Value
+	rpcLimiter atomic.Value // 请求限流器
 
 	// eventCh is used to receive events from the serf cluster in the datacenter
-	eventCh chan serf.Event
+	eventCh chan serf.Event // 接收serf事件
 
 	// Logger uses the provided LogOutput
 	logger hclog.InterceptLogger
 
 	// serf is the Serf cluster maintained inside the DC
 	// which contains all the DC nodes
-	serf *serf.Serf
+	serf *serf.Serf // 服务节点发现
 
-	shutdown     bool
-	shutdownCh   chan struct{}
-	shutdownLock sync.Mutex
+	shutdown     bool // 节点关闭
+	shutdownCh   chan struct{} // 节点关闭channel
+	shutdownLock sync.Mutex // 同步锁
 
 	// embedded struct to hold all the enterprise specific data
 	EnterpriseClient
 
-	tlsConfigurator *tlsutil.Configurator
+	tlsConfigurator *tlsutil.Configurator // https的
 }
 
 // NewClient creates and returns a Client
@@ -97,7 +97,7 @@ func NewClient(config *Config, deps Deps) (*Client, error) {
 	if err := config.CheckProtocolVersion(); err != nil {
 		return nil, err
 	}
-	if config.DataDir == "" {
+	if config.DataDir == "" { // client启动必须提供数据目录
 		return nil, fmt.Errorf("Config must provide a DataDir")
 	}
 	if err := config.CheckACL(); err != nil {
