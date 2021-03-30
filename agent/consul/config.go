@@ -537,19 +537,19 @@ func (c *Config) CheckACL() error {
 
 // DefaultConfig returns a default configuration.
 func DefaultConfig() *Config {
-	hostname, err := os.Hostname()
+	hostname, err := os.Hostname() // 获取主机的名称，hostName， xxx
 	if err != nil {
 		panic(err)
 	}
 
 	conf := &Config{
 		Build:                                version.Version,
-		Datacenter:                           DefaultDC,
+		Datacenter:                           DefaultDC, // 默认的dataCenter为dc1
 		NodeName:                             hostname,
-		RPCAddr:                              DefaultRPCAddr,
+		RPCAddr:                              DefaultRPCAddr, // RPC端口，默认为8300
 		RaftConfig:                           raft.DefaultConfig(),
-		SerfLANConfig:                        libserf.DefaultConfig(),
-		SerfWANConfig:                        libserf.DefaultConfig(),
+		SerfLANConfig:                        libserf.DefaultConfig(), // 底层局域网通信协议配置
+		SerfWANConfig:                        libserf.DefaultConfig(), // 底层广域网通信协议配置
 		SerfFloodInterval:                    60 * time.Second,
 		ReconcileInterval:                    60 * time.Second,
 		ProtocolVersion:                      ProtocolVersion2Compatible,
@@ -618,7 +618,7 @@ func DefaultConfig() *Config {
 	}
 
 	// Increase our reap interval to 3 days instead of 24h.
-	conf.SerfLANConfig.ReconnectTimeout = 3 * 24 * time.Hour
+	conf.SerfLANConfig.ReconnectTimeout = 3 * 24 * time.Hour // Serf：基于Gossip协议的节点发现，局域网通信
 	conf.SerfWANConfig.ReconnectTimeout = 3 * 24 * time.Hour
 
 	// WAN Serf should use the WAN timing, since we are using it
@@ -635,7 +635,7 @@ func DefaultConfig() *Config {
 
 	// Raft protocol version 3 only works with other Consul servers running
 	// 0.8.0 or later.
-	conf.RaftConfig.ProtocolVersion = 3
+	conf.RaftConfig.ProtocolVersion = 3 // server agent需要运行相应的raft协议
 
 	// Disable shutdown on removal
 	conf.RaftConfig.ShutdownOnRemove = false

@@ -8,18 +8,18 @@ import (
 var (
 	// The git commit that was compiled. These will be filled in by the
 	// compiler.
-	GitCommit string
+	GitCommit string // git commit信息 --- 应该为空
 
 	// The main version number that is being run at the moment.
 	//
 	// Version must conform to the format expected by github.com/hashicorp/go-version
 	// for tests to work.
-	Version = "1.10.0"
+	Version = "1.10.0" // 版本号信息
 
 	// A pre-release marker for the version. If this is "" (empty string)
 	// then it means that it is a final release. Otherwise, this is a pre-release
 	// such as "dev" (in development), "beta", "rc1", etc.
-	VersionPrerelease = "dev"
+	VersionPrerelease = "dev" // 开发版本
 )
 
 // GetHumanVersion composes the parts of the version in a way that's suitable

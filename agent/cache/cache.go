@@ -103,7 +103,7 @@ type Cache struct {
 	// types stores the list of data types that the cache knows how to service.
 	// These can be dynamically registered with RegisterType.
 	typesLock sync.RWMutex
-	types     map[string]typeEntry
+	types     map[string]typeEntry // 缓存注册的类型
 
 	// entries contains the actual cache data. Access to entries and
 	// entriesExpiryHeap must be protected by entriesLock.
@@ -222,7 +222,7 @@ func New(options Options) *Cache {
 // RegisterOptions are options that can be associated with a type being
 // registered for the cache. This changes the behavior of the cache for
 // this type.
-type RegisterOptions struct {
+type RegisterOptions struct { // 注册的可缓存类型的配置
 	// LastGetTTL is the time that the values returned by this type remain
 	// in the cache after the last get operation. If a value isn't accessed
 	// within this duration, the value is purged from the cache and
@@ -232,13 +232,13 @@ type RegisterOptions struct {
 	// Refresh configures whether the data is actively refreshed or if
 	// the data is only refreshed on an explicit Get. The default (false)
 	// is to only request data on explicit Get.
-	Refresh bool
+	Refresh bool // 数据是否会自动刷新
 
 	// SupportsBlocking should be set to true if the type supports blocking queries.
 	// Types that do not support blocking queries will not be able to use
 	// background refresh nor will the cache attempt blocking fetches if the
 	// client requests them with MinIndex.
-	SupportsBlocking bool
+	SupportsBlocking bool //
 
 	// RefreshTimer is the time to sleep between attempts to refresh data.
 	// If this is zero, then data is refreshed immediately when a fetch
@@ -266,10 +266,10 @@ type RegisterOptions struct {
 //
 // This makes the type available for Get but does not automatically perform
 // any prefetching. In order to populate the cache, Get must be called.
-func (c *Cache) RegisterType(n string, typ Type) {
+func (c *Cache) RegisterType(n string, typ Type) { // 注册可以缓存的类型
 	opts := typ.RegisterOptions()
 	if opts.LastGetTTL == 0 {
-		opts.LastGetTTL = 72 * time.Hour // reasonable default is days
+		opts.LastGetTTL = 72 * time.Hour // reasonable default is days 缓存存活时间
 	}
 
 	c.typesLock.Lock()

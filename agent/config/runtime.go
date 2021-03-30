@@ -28,6 +28,7 @@ type RuntimeSOAConfig struct {
 	Minttl  uint32 // 0,
 }
 
+// 将运行时配置独立出来，方便其他代码段直接获取相应的配置值
 // RuntimeConfig specifies the configuration the consul agent actually
 // uses. Is is derived from one or more Config structures which can come
 // from files, flags and/or environment variables.
@@ -1359,7 +1360,7 @@ type RuntimeConfig struct {
 	//
 	// hcl: start_join = []string
 	// flag: -join string -join string
-	StartJoinAddrsLAN []string
+	StartJoinAddrsLAN []string // 局域网加入集群的consul agent地址
 
 	// StartJoinWAN is a list of addresses to attempt to join -wan when the
 	// agent starts. If Serf is unable to communicate with any of these

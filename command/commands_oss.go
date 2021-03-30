@@ -117,8 +117,8 @@ func init() {
 	ver := consulversion.Version
 	verPre := consulversion.VersionPrerelease
 	verHuman := consulversion.GetHumanVersion()
-
-	Register("acl", func(cli.Ui) (cli.Command, error) { return acl.New(), nil })
+	// 注册各类命令，执行入口位于返回的命令Factory的 Run(args []string) int 接口方法中
+	Register("acl", func(cli.Ui) (cli.Command, error) { return acl.New(), nil }) // 注册acl命令
 	Register("acl bootstrap", func(ui cli.Ui) (cli.Command, error) { return aclbootstrap.New(ui), nil })
 	Register("acl policy", func(cli.Ui) (cli.Command, error) { return aclpolicy.New(), nil })
 	Register("acl policy create", func(ui cli.Ui) (cli.Command, error) { return aclpcreate.New(ui), nil })
@@ -153,10 +153,10 @@ func init() {
 	Register("acl binding-rule read", func(ui cli.Ui) (cli.Command, error) { return aclbrread.New(ui), nil })
 	Register("acl binding-rule update", func(ui cli.Ui) (cli.Command, error) { return aclbrupdate.New(ui), nil })
 	Register("acl binding-rule delete", func(ui cli.Ui) (cli.Command, error) { return aclbrdelete.New(ui), nil })
-	Register("agent", func(ui cli.Ui) (cli.Command, error) {
+	Register("agent", func(ui cli.Ui) (cli.Command, error) { // 通过agent命令启动 consul 代理
 		return agent.New(ui, rev, ver, verPre, verHuman, make(chan struct{})), nil
 	})
-	Register("catalog", func(cli.Ui) (cli.Command, error) { return catalog.New(), nil })
+	Register("catalog", func(cli.Ui) (cli.Command, error) { return catalog.New(), nil })  // catalog 查看服务对应的目录
 	Register("catalog datacenters", func(ui cli.Ui) (cli.Command, error) { return catlistdc.New(ui), nil })
 	Register("catalog nodes", func(ui cli.Ui) (cli.Command, error) { return catlistnodes.New(ui), nil })
 	Register("catalog services", func(ui cli.Ui) (cli.Command, error) { return catlistsvc.New(ui), nil })

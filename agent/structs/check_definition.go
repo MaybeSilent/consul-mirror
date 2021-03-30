@@ -9,7 +9,7 @@ import (
 )
 
 // CheckDefinition is used to JSON decode the Check definitions
-type CheckDefinition struct {
+type CheckDefinition struct { // 服务健康检查相关配置
 	ID        types.CheckID
 	Name      string
 	Notes     string

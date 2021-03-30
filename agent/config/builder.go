@@ -42,7 +42,7 @@ import (
 )
 
 // LoadOpts used by Load to construct and validate a RuntimeConfig.
-type LoadOpts struct {
+type LoadOpts struct { // 用于加载相关的Config
 	// FlagValues contains the command line arguments that can also be set
 	// in a config file.
 	FlagValues Config
@@ -62,11 +62,11 @@ type LoadOpts struct {
 	// HCL is a slice of config data in hcl format. Each one will be loaded as
 	// if it were the source of a config file. Values from HCL will override
 	// values from ConfigFiles and FlagValues.
-	HCL []string
+	HCL []string // HCL配置文件信息
 
 	// DefaultConfig is an optional source that is applied after other defaults
 	// but before ConfigFiles and all other user specified config.
-	DefaultConfig Source
+	DefaultConfig Source //
 
 	// Overrides are optional config sources that are applied as the very last
 	// config source so they can override any previous values.
@@ -87,9 +87,9 @@ type LoadOpts struct {
 // source injected as the final source in the configuration parsing chain.
 //
 // The caller is responsible for handling any warnings in LoadResult.Warnings.
-func Load(opts LoadOpts) (LoadResult, error) {
+func Load(opts LoadOpts) (LoadResult, error) { //
 	r := LoadResult{}
-	b, err := newBuilder(opts)
+	b, err := newBuilder(opts) // 获得配置加载的结构体
 	if err != nil {
 		return r, err
 	}
@@ -97,7 +97,7 @@ func Load(opts LoadOpts) (LoadResult, error) {
 	if err != nil {
 		return r, err
 	}
-	return LoadResult{RuntimeConfig: &cfg, Warnings: b.Warnings}, nil
+	return LoadResult{RuntimeConfig: &cfg, Warnings: b.Warnings}, nil // 得到整合后的RunTimeConfig
 }
 
 // LoadResult is the result returned from Load. The caller is responsible for
@@ -112,15 +112,15 @@ type LoadResult struct {
 //
 // The sources are merged in the following order:
 //
-//  * default configuration
-//  * config files in alphabetical order
-//  * command line arguments
+//  * default configuration   			 // 默认配置
+//  * config files in alphabetical order // 配置文件，根据字母顺序排列
+//  * command line arguments  			 // 命令行优先级最高
 //  * overrides
 //
 // The config sources are merged sequentially and later values overwrite
 // previously set values. Slice values are merged by concatenating the two slices.
 // Map values are merged by over-laying the later maps on top of earlier ones.
-type builder struct {
+type builder struct { // 从多种配置源中根据优先级等获取配置
 	opts LoadOpts
 
 	// Head, Sources, and Tail are used to manage the order of the
@@ -131,7 +131,7 @@ type builder struct {
 
 	// Warnings contains the warnings encountered when
 	// parsing the configuration.
-	Warnings []string
+	Warnings []string // 解析配置文件发生的Warnings
 
 	// err contains the first error that occurred during
 	// building the runtime configuration.
@@ -141,7 +141,7 @@ type builder struct {
 // newBuilder returns a new configuration Builder from the LoadOpts.
 func newBuilder(opts LoadOpts) (*builder, error) {
 	configFormat := opts.ConfigFormat
-	if configFormat != "" && configFormat != "json" && configFormat != "hcl" {
+	if configFormat != "" && configFormat != "json" && configFormat != "hcl" { // 支持json或者hcl两种配置文件格式
 		return nil, fmt.Errorf("config: -config-format must be either 'hcl' or 'json'")
 	}
 
@@ -150,7 +150,7 @@ func newBuilder(opts LoadOpts) (*builder, error) {
 		Head: []Source{DefaultSource(), DefaultEnterpriseSource()},
 	}
 
-	if boolVal(opts.DevMode) {
+	if boolVal(opts.DevMode) { // 命令中有-dev参数，会启用开发配置
 		b.Head = append(b.Head, DevSource())
 	}
 
@@ -294,12 +294,12 @@ func (a byName) Len() int           { return len(a) }
 func (a byName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byName) Less(i, j int) bool { return a[i].Name() < a[j].Name() }
 
-func (b *builder) BuildAndValidate() (RuntimeConfig, error) {
-	rt, err := b.Build()
+func (b *builder) BuildAndValidate() (RuntimeConfig, error) { // 根据优先级加载配置并进行验证
+	rt, err := b.Build() // 根据优先级加载runTime配置
 	if err != nil {
 		return RuntimeConfig{}, err
 	}
-	if err := b.Validate(rt); err != nil {
+	if err := b.Validate(rt); err != nil { // 对runTime相关的配置进行验证
 		return RuntimeConfig{}, err
 	}
 	return rt, nil
@@ -319,7 +319,7 @@ func (b *builder) Build() (rt RuntimeConfig, err error) {
 
 	// parse the config sources into a configuration
 	var c Config
-	for _, s := range srcs {
+	for _, s := range srcs { // 根据Source对各类配置进行覆盖
 
 		c2, md, err := s.Parse()
 		switch {
@@ -358,7 +358,7 @@ func (b *builder) Build() (rt RuntimeConfig, err error) {
 			c2.Service = nil
 		}
 
-		c = Merge(c, c2)
+		c = Merge(c, c2) // 覆盖写入
 	}
 
 	// ----------------------------------------------------------------
@@ -366,10 +366,10 @@ func (b *builder) Build() (rt RuntimeConfig, err error) {
 	//
 
 	var dnsServiceTTL = map[string]time.Duration{}
-	for k, v := range c.DNS.ServiceTTL {
+	for k, v := range c.DNS.ServiceTTL { // DNS超时时间配置
 		dnsServiceTTL[k] = b.durationVal(fmt.Sprintf("dns_config.service_ttl[%q]", k), &v)
 	}
-
+	// DNS相关配置
 	soa := RuntimeSOAConfig{Refresh: 3600, Retry: 600, Expire: 86400, Minttl: 0}
 	if c.DNS.SOA != nil {
 		if c.DNS.SOA.Expire != nil {
@@ -385,7 +385,7 @@ func (b *builder) Build() (rt RuntimeConfig, err error) {
 			soa.Retry = *c.DNS.SOA.Retry
 		}
 	}
-
+	// runtime的相应配置
 	leaveOnTerm := !boolVal(c.ServerMode)
 	if c.LeaveOnTerm != nil {
 		leaveOnTerm = boolVal(c.LeaveOnTerm)
@@ -826,7 +826,7 @@ func (b *builder) Build() (rt RuntimeConfig, err error) {
 
 	// ----------------------------------------------------------------
 	// build runtime config
-	//
+	// 构造RuntimeConfig的配置
 	dataDir := stringVal(c.DataDir)
 	rt = RuntimeConfig{
 		// non-user configurable values

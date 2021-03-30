@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/consul/service_os"
 )
 
+// agent命令初始化，对版本号等进行赋值
 func New(ui cli.Ui, revision, version, versionPre, versionHuman string, shutdownCh <-chan struct{}) *cmd {
 	ui = &cli.PrefixedUi{
 		OutputPrefix: "==> ",
@@ -64,7 +65,7 @@ type cmd struct {
 }
 
 func (c *cmd) Run(args []string) int {
-	code := c.run(args)
+	code := c.run(args) // agent命令支持子命令，将子命令传入command
 	if c.logger != nil {
 		c.logger.Info("Exit code", "code", code)
 	}
@@ -72,6 +73,7 @@ func (c *cmd) Run(args []string) int {
 }
 
 // checkpointResults is used to handler periodic results from our update checker
+// 处理Check的相应结果
 func (c *cmd) checkpointResults(results *checkpoint.CheckResponse, err error) {
 	if err != nil {
 		c.logger.Error("Failed to check for updates", "error", err)
@@ -90,6 +92,7 @@ func (c *cmd) checkpointResults(results *checkpoint.CheckResponse, err error) {
 	}
 }
 
+// 启动的时候请求远端对相关的信息进行检查（版本号等）
 func (c *cmd) startupUpdateCheck(config *config.RuntimeConfig) {
 	version := config.Version
 	if config.VersionPrerelease != "" {
@@ -99,7 +102,7 @@ func (c *cmd) startupUpdateCheck(config *config.RuntimeConfig) {
 		Product: "consul",
 		Version: version,
 	}
-	if !config.DisableAnonymousSignature {
+	if !config.DisableAnonymousSignature { // 决定是否在参数中发送SignatureFile
 		updateParams.SignatureFile = filepath.Join(config.DataDir, "checkpoint-signature")
 	}
 
@@ -113,6 +116,7 @@ func (c *cmd) startupUpdateCheck(config *config.RuntimeConfig) {
 	}()
 }
 
+// LAN局域网（local area network）
 // startupJoin is invoked to handle any joins specified to take place at start time
 func (c *cmd) startupJoin(agent *agent.Agent, cfg *config.RuntimeConfig) error {
 	if len(cfg.StartJoinAddrsLAN) == 0 {
@@ -129,6 +133,7 @@ func (c *cmd) startupJoin(agent *agent.Agent, cfg *config.RuntimeConfig) error {
 	return nil
 }
 
+// WAN广域网（wide area network）
 // startupJoinWan is invoked to handle any joins -wan specified to take place at start time
 func (c *cmd) startupJoinWan(agent *agent.Agent, cfg *config.RuntimeConfig) error {
 	if len(cfg.StartJoinAddrsWAN) == 0 {
@@ -144,24 +149,27 @@ func (c *cmd) startupJoinWan(agent *agent.Agent, cfg *config.RuntimeConfig) erro
 	c.logger.Info("Join -wan completed. Initial agents synced with", "agent_count", n)
 	return nil
 }
-
+// consul agent 启动方法
 func (c *cmd) run(args []string) int {
+	// 对输入的flag参数进行解析
 	if err := c.flags.Parse(args); err != nil {
 		if !strings.Contains(err.Error(), "help requested") {
 			c.UI.Error(fmt.Sprintf("error parsing flags: %v", err))
 		}
 		return 1
 	}
+	// 对agent的子命令进行解析，出现了多余的参数，则直接输出错误参数
 	if len(c.flags.Args()) > 0 {
 		c.UI.Error(fmt.Sprintf("Unexpected extra arguments: %v", c.flags.Args()))
 		return 1
 	}
-
-	logGate := &logging.GatedWriter{Writer: &cli.UiWriter{Ui: c.UI}}
-	loader := func(source config.Source) (config.LoadResult, error) {
+	// 初始化agent的配置
+	logGate := &logging.GatedWriter{Writer: &cli.UiWriter{Ui: c.UI}}  // 指定信息输出
+	loader := func(source config.Source) (config.LoadResult, error) { // 初始化loader加载配置的方法
 		c.configLoadOpts.DefaultConfig = source
 		return config.Load(c.configLoadOpts)
 	}
+	// agent配置的初始化
 	bd, err := agent.NewBaseDeps(loader, logGate)
 	if err != nil {
 		c.UI.Error(err.Error())
@@ -190,6 +198,7 @@ func (c *cmd) run(args []string) int {
 	if config.ServerMode {
 		segment = "<all>"
 	}
+	// 输出相关信息
 	cli.info(fmt.Sprintf("       Version: '%s'", c.versionHuman))
 	cli.info(fmt.Sprintf("       Node ID: '%s'", config.NodeID))
 	cli.info(fmt.Sprintf("     Node name: '%s'", config.NodeName))
@@ -208,11 +217,11 @@ func (c *cmd) run(args []string) int {
 
 	// wait for signal
 	signalCh := make(chan os.Signal, 10)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGPIPE)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGPIPE) // 开始调用服务启动方法，
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go func() {
+	go func() { // 启动守护协程，用来处理系统的信号信息
 		for {
 			var sig os.Signal
 			select {
@@ -238,42 +247,43 @@ func (c *cmd) run(args []string) int {
 		}
 	}()
 
-	err = agent.Start(ctx)
-	signal.Stop(signalCh)
-	cancel()
+	err = agent.Start(ctx) // agent启动方法，在其中异步启动agent的service后退出
+	signal.Stop(signalCh) // 服务已启动，无须再监听系统信号
+	cancel() // 取消启动的context
 
 	if err != nil {
 		c.logger.Error("Error starting agent", "error", err)
-		return 1
+		return 1 // 启动错误直接退出
 	}
 
 	// shutdown agent before endpoints
-	defer agent.ShutdownEndpoints()
-	defer agent.ShutdownAgent()
-
+	defer agent.ShutdownEndpoints() //
+	defer agent.ShutdownAgent()     // 关闭方法
+	// 更新检查，仅在配置了更新检查的情况下启动，测试环境不启用
 	if !config.DisableUpdateCheck && !config.DevMode {
 		c.startupUpdateCheck(config)
 	}
-
+	// 将启动的agent加入到局域网中
 	if err := c.startupJoin(agent, config); err != nil {
 		c.logger.Error((err.Error()))
 		return 1
 	}
 
+	// 将启动的agent加入到广域网中
 	if err := c.startupJoinWan(agent, config); err != nil {
 		c.logger.Error((err.Error()))
 		return 1
 	}
 
 	// Let the agent know we've finished registration
-	agent.StartSync()
+	agent.StartSync() // 与远端进行信息同步
 
 	cli.output("Consul agent running!")
 
 	// wait for signal
 	signalCh = make(chan os.Signal, 10)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGPIPE)
-
+	// 启动后监听系统信号，退出，异常等
 	for {
 		var sig os.Signal
 		select {
@@ -283,7 +293,7 @@ func (c *cmd) run(args []string) int {
 			sig = os.Interrupt
 		case <-c.shutdownCh:
 			sig = os.Interrupt
-		case err := <-agent.RetryJoinCh():
+		case err := <-agent.RetryJoinCh(): //
 			c.logger.Error("Retry join failed", "error", err)
 			return 1
 		case <-agent.Failed():
@@ -308,7 +318,7 @@ func (c *cmd) run(args []string) int {
 			config = agent.GetConfig()
 		default:
 			c.logger.Info("Caught", "signal", sig)
-
+			// 平滑退出：退出前有序关闭各个子系统
 			graceful := (sig == os.Interrupt && !(config.SkipLeaveOnInt)) || (sig == syscall.SIGTERM && (config.LeaveOnTerm))
 			if !graceful {
 				c.logger.Info("Graceful shutdown disabled. Exiting")
@@ -316,8 +326,8 @@ func (c *cmd) run(args []string) int {
 			}
 
 			c.logger.Info("Gracefully shutting down agent...")
-			gracefulCh := make(chan struct{})
-			go func() {
+			gracefulCh := make(chan struct{}) //
+			go func() { // 调用agent.Leave()来进行平滑退出
 				if err := agent.Leave(); err != nil {
 					c.logger.Error("Error on leave", "error", err)
 					return
@@ -327,13 +337,13 @@ func (c *cmd) run(args []string) int {
 
 			gracefulTimeout := 15 * time.Second
 			select {
-			case <-signalCh:
+			case <-signalCh: // 连续收到两次退出信号会强制退出
 				c.logger.Info("Caught second signal, Exiting", "signal", sig)
 				return 1
-			case <-time.After(gracefulTimeout):
+			case <-time.After(gracefulTimeout): // 有序超时，强制退出
 				c.logger.Info("Timeout on graceful leave. Exiting")
 				return 1
-			case <-gracefulCh:
+			case <-gracefulCh: // 已完成平滑退出
 				c.logger.Info("Graceful exit completed")
 				return 0
 			}
@@ -341,7 +351,7 @@ func (c *cmd) run(args []string) int {
 	}
 }
 
-type GatedUi struct {
+type GatedUi struct { // GateUi
 	JSONoutput bool
 	ui         cli.Ui
 }
@@ -366,10 +376,10 @@ func (c *cmd) Help() string {
 	return c.help
 }
 
-const synopsis = "Runs a Consul agent"
+const synopsis = "Runs a Consul agent" // agent命令解释说明
 const help = `
 Usage: consul agent [options]
 
   Starts the Consul agent and runs until an interrupt is received. The
   agent represents a single node in a cluster.
-`
+` // agent命令-h输出内容

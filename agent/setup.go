@@ -75,12 +75,12 @@ func NewBaseDeps(configLoader ConfigLoader, logOut io.Writer) (BaseDeps, error) 
 		d.Logger.Warn(w)
 	}
 
-	cfg.NodeID, err = newNodeIDFromConfig(cfg, d.Logger)
+	cfg.NodeID, err = newNodeIDFromConfig(cfg, d.Logger) // 生成对应的NodeId
 	if err != nil {
 		return d, fmt.Errorf("failed to setup node ID: %w", err)
 	}
 
-	gauges, counters, summaries := getPrometheusDefs(cfg.Telemetry)
+	gauges, counters, summaries := getPrometheusDefs(cfg.Telemetry) // 设置普罗米修斯的相关监控
 	cfg.Telemetry.PrometheusOpts.GaugeDefinitions = gauges
 	cfg.Telemetry.PrometheusOpts.CounterDefinitions = counters
 	cfg.Telemetry.PrometheusOpts.SummaryDefinitions = summaries
@@ -88,22 +88,24 @@ func NewBaseDeps(configLoader ConfigLoader, logOut io.Writer) (BaseDeps, error) 
 	if err != nil {
 		return d, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
-
+	// TLS相关配置，HTTPS的协议
 	d.TLSConfigurator, err = tlsutil.NewConfigurator(cfg.ToTLSUtilConfig(), d.Logger)
 	if err != nil {
 		return d, err
 	}
 
-	d.RuntimeConfig = cfg
+	d.RuntimeConfig = cfg // 指定deps的运行时配置
 	d.Tokens = new(token.Store)
 
 	cfg.Cache.Logger = d.Logger.Named("cache")
 	// cache-types are not registered yet, but they won't be used until the components are started.
-	d.Cache = cache.New(cfg.Cache)
-	d.ConnPool = newConnPool(cfg, d.Logger, d.TLSConfigurator)
+	d.Cache = cache.New(cfg.Cache) // 缓存信息
+	d.ConnPool = newConnPool(cfg, d.Logger, d.TLSConfigurator) // 连接池配置
 
-	builder := resolver.NewServerResolverBuilder(resolver.Config{})
+
+	builder := resolver.NewServerResolverBuilder(resolver.Config{}) // grpc相关的配置
 	registerWithGRPC(builder)
+	// grpc的连接池
 	d.GRPCConnPool = grpc.NewClientConnPool(builder, grpc.TLSWrapper(d.TLSConfigurator.OutgoingRPCWrapper()), d.TLSConfigurator.UseTLS)
 
 	d.Router = router.NewRouter(d.Logger, cfg.Datacenter, fmt.Sprintf("%s.%s", cfg.NodeName, cfg.Datacenter), builder)

@@ -19,7 +19,7 @@ import (
 // newNodeIDFromConfig will pull the persisted node ID, if any, or create a random one
 // and persist it.
 func newNodeIDFromConfig(config *config.RuntimeConfig, logger hclog.Logger) (types.NodeID, error) {
-	if config.NodeID != "" {
+	if config.NodeID != "" {// 已指定NodeID
 		nodeID := strings.ToLower(string(config.NodeID))
 		if _, err := uuid.ParseUUID(nodeID); err != nil {
 			return "", fmt.Errorf("specified NodeID is invalid: %w", err)
@@ -28,7 +28,7 @@ func newNodeIDFromConfig(config *config.RuntimeConfig, logger hclog.Logger) (typ
 	}
 
 	// For dev mode we have no filesystem access so just make one.
-	if config.DataDir == "" {
+	if config.DataDir == "" { // 开发环境未指定数据目录
 		id, err := makeNodeID(logger, config.DisableHostNodeID)
 		return types.NodeID(id), err
 	}
